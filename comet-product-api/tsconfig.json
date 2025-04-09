@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    /* Base Options */
+    "target": "ES2020",                       // Spécifier la version ECMAScript cible
+    "module": "CommonJS",                     // Spécifier la génération de module ('CommonJS' pour Node.js)
+    "lib": ["ES2020"],                        // Bibliothèques standard à inclure
+    "outDir": "./dist",                       // Répertoire de sortie pour les fichiers JS compilés (utilisé par `tsc`)
+    "rootDir": ".",                           // Répertoire racine des sources (peut être ajusté si besoin, ex: "./src")
+    "sourceMap": true,                        // Générer les fichiers .map correspondants
+
+    /* Strict Type-Checking Options */
+    "strict": true,                           // Activer toutes les options de vérification de type strictes
+    // "noImplicitAny": true,                 // Lever une erreur sur les expressions et déclarations avec un type 'any' implicite
+    // "strictNullChecks": true,              // Activer les vérifications strictes de nullité
+    // "strictFunctionTypes": true,           // Activer la vérification stricte des types de fonction
+    // "strictPropertyInitialization": true,  // S'assurer que les propriétés de classe sont initialisées dans le constructeur
+    // "noImplicitThis": true,                // Lever une erreur sur 'this' avec un type 'any' implicite
+    // "alwaysStrict": true,                  // Parser en mode strict et émettre "use strict" pour chaque fichier source
+
+    /* Module Resolution Options */
+    "moduleResolution": "node",             // Spécifier la stratégie de résolution de module: 'node' pour Node.js
+    "esModuleInterop": true,                  // Permettre l'interopérabilité entre CommonJS et ES Modules via la création de namespaces pour tous les imports
+    "resolveJsonModule": true,                // Inclure les modules importés avec l'extension .json
+
+    /* Advanced Options */
+    "skipLibCheck": true,                     // Ignorer la vérification des types de tous les fichiers de déclaration (.d.ts)
+    "forceConsistentCasingInFileNames": true, // Assurer la cohérence de la casse dans les noms de fichiers
+
+    /* Type Definitions */
+    "types": ["node", "jest"]                // <<=== Important : Inclure explicitement les types pour Node.js et Jest
+  },
+  "include": [
+    "**/*.ts"                                // Inclure tous les fichiers .ts dans le projet
+  ],
+  "exclude": [
+    "node_modules",                         // Exclure le répertoire node_modules
+    "cdk.out",                              // Exclure le répertoire de sortie CDK
+    "dist"                                  // Exclure le répertoire de sortie de la compilation TypeScript
+  ]
+} 
