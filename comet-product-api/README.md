@@ -20,10 +20,10 @@ L'architecture suit un modèle événementiel :
 ```mermaid
 graph TD
     A[Utilisateur/Système Externe] -- Requête POST /products --> B(API Gateway: Endpoint POST /products);
-    B -- Invoque --> C{Lambda: Insérer Produit (déclenchée par API GW)};
+    B -- Invoque --> C{"Lambda: Insérer Produit (déclenchée par API GW)"};
     C -- Écrit dans --> D[DynamoDB: Table Produits];
     C -- Publie Événement ProduitCréé --> E(SNS: Topic Événements Produit);
-    E -- Déclenche --> F{Lambda: Envoyer Email (déclenchée par SNS)};
+    E -- Déclenche --> F{"Lambda: Envoyer Email (déclenchée par SNS)"};
     F -- Demande Envoi Email --> G(SES: Service Envoi Email);
     G -- Envoie --> H[Email Destinataire];
 
