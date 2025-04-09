@@ -19,13 +19,13 @@ L'architecture suit un modèle événementiel :
 
 ```mermaid
 graph TD
-    A[Client] -- Requête POST /products --> B(API Gateway / OpenAPI Spec); 
-    B -- Invoque --> C{ProductInserter Lambda / IAM Role}; 
-    C -- Écrit --> D[DynamoDB Table];
-    C -- Publie Événement --> E(SNS Topic); 
-    E -- Déclenche --> F{EmailSender Lambda / IAM Role}; 
-    F -- Envoie Email --> G(AWS SES); 
-    G -- Email --> H[Client Email];
+    A[Utilisateur/Système Externe] -- Requête POST /products --> B(API Gateway: Endpoint POST /products);
+    B -- Invoque --> C{Lambda: Insérer Produit (déclenchée par API GW)};
+    C -- Écrit dans --> D[DynamoDB: Table Produits];
+    C -- Publie Événement ProduitCréé --> E(SNS: Topic Événements Produit);
+    E -- Déclenche --> F{Lambda: Envoyer Email (déclenchée par SNS)};
+    F -- Demande Envoi Email --> G(SES: Service Envoi Email);
+    G -- Envoie --> H[Email Destinataire];
 
     style D fill:#f9f,stroke:#333,stroke-width:2px
     style E fill:#f9f,stroke:#333,stroke-width:2px
@@ -202,63 +202,25 @@ Les variables d'environnement nécessaires aux tests (ex: noms de table/topic fi
 
 ## Flux de Développement et Déploiement
 
-Le diagramme de séquence suivant illustre les étapes typiques suivies par un développeur pour configurer, développer, tester et déployer cette application :
+Le diagramme de séquence simplifié suivant illustre les grandes étapes du cycle de vie de l'application :
 
 ```mermaid
 sequenceDiagram
     participant Dev as Développeur
-    participant LocalEnv as Environnement Local (PC/WSL)
-    participant Code as Code Source (Git Repo)
-    participant AWS_CDK as AWS CDK CLI
-    participant AWS_CFN as AWS CloudFormation
-    participant AWS_Services as Services AWS Déployés
+    participant Code as Code Source + Config (.env)
+    participant CDK_CLI as AWS CDK CLI
+    participant AWS
 
-    Dev->>LocalEnv: Installer Prérequis (Node, npm, AWS CLI, CDK CLI)
-    Dev->>LocalEnv: Cloner Repo Git & cd comet-product-api
-    Dev->>LocalEnv: npm install (Dépendances Projet)
-    Dev->>Code: Modifier .env (Emails, etc.)
-    Note over Dev,Code: Configuration Locale
-
-    loop Développement/Test Local
-        Dev->>Code: Modifier Code Lambda (lambda/**/index.ts)
-        Dev->>Code: Modifier Tests Unitaires (lambda/**/index.test.ts)
-        Dev->>LocalEnv: npm test (Exécute Jest avec ts-jest)
-        LocalEnv-->>Dev: Résultats des Tests Unitaires
-        Note over Dev,LocalEnv: Itération sur la logique métier
-        Dev->>LocalEnv: (Optionnel) Simuler avec SAM CLI (voir section dédiée)
-    end
-
-    Note over Dev,AWS_CDK: Préparation au Déploiement
-    Dev->>LocalEnv: npm run build (Compile code CDK/TS)
-    Dev->>LocalEnv: cdk bootstrap (Si 1ère fois / région)
-    AWS_CDK->>AWS_CFN: Crée ressources Bootstrap (S3, Rôles)
-    AWS_CFN-->>AWS_CDK: OK
-
-    Note over Dev,AWS_CDK: Déploiement
-    Dev->>LocalEnv: cdk deploy
-    LocalEnv->>AWS_CDK: Exécute 'cdk deploy'
-    AWS_CDK->>Code: Lit code Stack (lib/), charge .env (via bin/)
-    AWS_CDK->>AWS_CFN: Synthétise & Envoie Template CloudFormation
-    AWS_CFN->>AWS_Services: Crée/Met à jour Ressources (API GW, Lambdas, DynamoDB, SNS, Rôles...)
-    AWS_Services-->>AWS_CFN: Statut Création/MàJ
-    AWS_CFN-->>AWS_CDK: Statut Déploiement
-    AWS_CDK-->>LocalEnv: Affiche Outputs (URLs, etc.)
-    LocalEnv-->>Dev: Déploiement Terminé
-
-    Note over Dev,AWS_Services: Test Post-Déploiement
-    Dev->>LocalEnv: Utilise curl / Postman
-    LocalEnv->>AWS_Services: Envoie Requête POST /products (API GW)
-    AWS_Services->>AWS_Services: Exécute le flux (Lambda1 -> DDB/SNS -> Lambda2 -> SES)
-    AWS_Services-->>LocalEnv: Réponse API (201 Created)
-    LocalEnv-->>Dev: Affiche Réponse
-    Dev->>AWS_Services: Vérifie Email, DynamoDB, Logs CloudWatch
-
-    Note over Dev,AWS_CDK: Nettoyage (Optionnel)
-    Dev->>LocalEnv: cdk destroy
-    AWS_CDK->>AWS_CFN: Demande suppression Stack
-    AWS_CFN->>AWS_Services: Supprime Ressources
-    AWS_Services-->>AWS_CFN: OK
-    AWS_CFN-->>AWS_CDK: OK
-    AWS_CDK-->>LocalEnv: Stack Supprimé
-    LocalEnv-->>Dev: Terminé
+    Dev->>Code: 1. Configurer & Coder (Modifier .env, Code Lambda, Tests)
+    Dev->>Dev: (npm test - Boucle de test local)
+    Dev->>CDK_CLI: 2. Déployer (npm run build, cdk deploy)
+    CDK_CLI->>AWS: Crée/Met à jour l'infrastructure & Lambdas
+    AWS-->>CDK_CLI: OK + Outputs (URL API)
+    CDK_CLI-->>Dev: Déploiement terminé
+    Dev->>AWS: 3. Tester Déploiement (curl/Postman -> API Gateway -> Vérifier Email/Logs)
+    AWS-->>Dev: Résultats (Réponse API, Email reçu?)
+    Dev->>CDK_CLI: 4. Nettoyer (Optionnel) (cdk destroy)
+    CDK_CLI->>AWS: Supprime l'infrastructure
+    AWS-->>CDK_CLI: OK
+    CDK_CLI-->>Dev: Nettoyage terminé
 ```
